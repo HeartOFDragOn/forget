@@ -1,0 +1,47 @@
+中间件是request/response的hooks机制．
+中间件的配置是有顺序的，个人感觉有点像filter.
+中间件不继承，不管定义在哪里只要将完整module名写入MIDDLEWARE_CLASS即可．
+
+激活中间件需要在settings文件中添加．添加在MIDDLEWARE_CLASSES下．
+如	MIDDLEWARE_CLASSES = ['django.middleware.security.SecurityMiddleware',
+				'django.contrib.sessions.middleware.SessionMiddleware',
+				'django.middleware.common.CommonMiddleware',
+				'django.middleware.csrf.CsrfViewMiddleware',
+				'django.contrib.auth.middleware.AuthenticationMiddleware',
+				'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+				'django.contrib.messages.middleware.MessageMiddleware',
+				'django.middleware.clickjacking.XFrameOptionsMiddleware',
+			　　　　　]
+在request的过程中，从上到下顺序调用．有两个hooks(其实就是callback): process_request()和process_view()
+在response的过程中刚好相反，从下到上调用.有三个hooks: process_exception(), process_template_response()和process_response(). 
+还有一个init方法．
+整个的执行顺序就是：　					process_request --->  process_view　---> view()
+												  |
+				  	process_response <--- process_template_response <--- HttpResponse
+						    |				|
+						    -------process_exception-----
+
+当然，不是所有方法都要有，只需要有一部分就行，甚至没有．
+我们可以在这些方法中做些事情．
+process_request（request）:
+	这个方法在执行view之前执行．request就是HttpRequest对象．它有返回值，如果返回None(如果不写return 默认也是返回None)，那么将会继续进入到process_view
+		方法．如果返回的是HttpResponse对象，就不继续执行下面的middleware了，直接返回．
+
+process_view(request, view_func, view_args, view_kwargs):
+	这里的view_func就是即将要执行的view函数．后面是这个函数的参数．这个函数返回值和process_request一致，如果返回None就继续，返回HttpResponse就返回．
+
+process_template_response(request,response):
+	response就是返回的TemplateResponse对象，可以在返回之前修改template.含有process_template_response或process_response或者process_exception方法的中间
+		件在request返回的时候会反向执行．它必须返回一个response对象．
+
+process_response(request,response):
+	response是django view或者是中间件返回的HttpResponse或者StreamingHttpResponse对象，他的返回值也必须是response对象或者None．如果返回的是Response那么
+		就不会继续执行上面的middleware了
+
+process_exception(request,exception)：
+	主要来处理view中raise的Exception.返回值同上．
+
+init:
+	init方法不能接受任何参数，除了self，而且它只会在服务器启动的时候才会被调用．就是第一次初始化middleware的时候．
+
+	

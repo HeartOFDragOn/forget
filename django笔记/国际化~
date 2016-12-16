@@ -1,0 +1,45 @@
+国际化有很多种方式：
+
+这里介绍我们项目中的方式：
+	使用i18n国际化，i18n指的是'internationlization',18指的是首字母i到尾字母n之间的字母数为18
+翻译可以分为前台翻译和后台翻译
+翻译的方式不大一样
+在后台：
+	可以通过ugettext()来进行翻译
+	导入from django.utils.translation import ugettext as _
+	_是为了简化键入方式	
+
+	只需要将需要翻译的文字作为参数传入就行了
+	_('need translation')
+
+	当然除此之外，不管是前台还是后台，都需要写翻译文件，制定内容翻译成什么。
+	通过python django-admin.py makemessages ‐l zh_CN命令可以生成django.po文件，在其中配置翻译内容
+	如：
+		msgid "need translation"
+		msgstr "需要翻译"
+	最后通过python manage.py compilemessages来编译po文件,生成django.mo
+
+在前台：
+	可以通过在模板中添加{% load i18n %}
+	以及django标签来实现，{% trans "need translation" %}
+	如果需要加入变量可以通过{% blocktrans with who as name %}{{name}} need translation{% endblocktrans %}
+	在po文件中添加：
+		msgid "%(name)s need translation"
+		msgstr "%(name)s需要翻译"
+
+在settings.py中需要添加：
+	USE_I18N = True
+	如果需要本地翻译的话可以设置USE_L10N = True
+	中间件中添加'django.middleware.transaction.TransactionMiddleware'
+	TEMPLATE_CONTEXT_PROCESSORS中添加'django.core.context_processors.i18n'
+	偏好设置：
+		LANGUAGES = (
+		    ('en', (u'English')),
+		    ('zh-cn', (u'Chinese')),
+		)
+
+触发翻译前台可以通过url请求http://DOMAIN/i18n/setlang,
+	在urls.py中include一下 url(r'^i18n/', include('django.conf.urls.i18n'))
+后台可以通过translation.activate(language_code)
+
+除此之外，还有一些扩展：　懒翻译（ugettext_lazy()）,延迟翻译（ugettext_noop()）,复数形式表示消息（ungettext()）

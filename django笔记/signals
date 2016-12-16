@@ -1,0 +1,28 @@
+信号是操作系统特性．系统要中断一个进程可以向其发送信号：如SIGINT(就是常见的control + c), SIGKILL(强制中断)等等．
+有些信号在被接受时，进程可以做出反应，所以可以达到信息传递效果．
+如：当数据库表发生变化时，如删除，使用signal可以获得信号实现刷新缓存．
+
+import signal
+可以通过signal.signal(sig, action)来为信号绑定事件．一旦接收到信号就会触发事件．
+django中的signal可以用装饰器实现绑定．（@receive()）,django中的signal更像是callable.
+
+发送信号一般有两种情况：
+	主动：	通过os.kill(pid, sig)就是主动向进程发送信号．
+	被动：　通过control + c或者子进程退出时会向父进程发送信号．
+
+django中的signal和python中的signal的联系：
+	//TODO
+
+django中的signal和消息队列不同，它是同步的，所以大量使用会降低性能．
+signal的很多功能都能通过其它方式来实现，如果不必要就不要使用signal了
+
+实现signal:
+	通过decorator:
+		@receiver(pre_save, sender=PersonModel, weak=False, dispatch_uid="flush-catche")		
+		def flush_catche():
+			...
+		
+	不用decorator:
+		post_save.connect(flush_catche, sender=PersonModel, weak=False, dispatch_uid="flush-catche")
+
+

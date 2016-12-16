@@ -1,0 +1,51 @@
+当系统的访问量很大时，就需要采用一些策略，其中在数据库方面的策略有数据库集群和库表散列．
+对数据库的表的操作有三种可以提升性能：
+	水平分割
+	垂直分割
+	库表散列
+水平分割：
+	水平分割其实就是将一张表的数据拆分成多张表，列还是那些列．按照一定规则将表分割．
+	分割可以根据日期，地域等分割．当然还有更多的业务分割．
+	postgresql中水平分割可以创建一张主表，这张表必须为空．然后建立分表来继承它．
+		CREATE TABLE tb_mytable (
+			id serial primary key,
+			username varchar(255),
+			password varchar(255),
+			created_time date);
+	然后建立分表继承(按时间分表)：
+		CREATE TABLE tb_mytable_001 (
+			check (created_time >= DATE '2016-12-12' AND created_time < '2017-01-12')
+			) INHERITS (tb_mytable);
+		CREATE TABLE tb_mytable_002 (
+			check (created_time >= DATE '2017-01-12' AND created_time < '2017-02-12')
+			) INHERITS (tb_mytable);
+	接着建立索引，因为是按照created_time分表的所以索引就是建立在这个字段上．（这个不是必须的，但是如果分表条件必须唯一，那就要加上了）
+		CREATE INDEX tb_mytable_001_created_time on tb_mytable_001(created_time);
+		CREATE INDEX tb_mytable_002_created_time on tb_mytable_002(created_time);
+	然后创建触发器函数：
+		CREATE or REPLACE FUNCTION tb_mytable_trigger()
+		RETURNS TRIGGER AS $$
+		BEGIN
+			IF (NEW.created_time >= DATE '2016-12-12' AND NEW.created_time < DATE '2017-1-12')
+			THEN INSERT INTO tb_mytable_001 VALUES (NEW.*);
+			ELSIF (NEW.created_time >= DATE '2017-1-12' AND NEW.created_time < DATE '2017-2-12')
+			THEN INSERT INTO tb_mytable_002 VALUES (NEW.*);
+			ELSE
+			INSERT INTO tb_mytable_002 VALUES (NEW.*);
+			END IF;
+			RETURN NULL;
+		END;
+		$$
+		LANGUAGE plpgsql;
+	然后创建触发器：
+		CREATE TRIGGER tb_mytable_trigger
+			BEFORE INSERT ON tb_mytable
+			FOR EACH ROW EXECUTE PROCEDURE tb_mytable_trigger();
+
+	现在水平分割的分表已经创建好了．
+	无论怎么插入tb_mytable，都会返回0条记录．
+	但是查询的时候可以查出所有记录．也可已查询分表．
+垂直分割：
+	将不常用的列分出去．垂直分割感觉比较像一对一关联．
+库表散列：
+	postgresql暂时不支持散列分表．

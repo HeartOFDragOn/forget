@@ -1,0 +1,98 @@
+
+拉取代码避免冲突:
+git pull --rebase origin XXX
+
+本地修改代码,切换分支:
+git stash
+git checkout XXX
+git stash pop
+
+图形化工具:
+git gui
+
+
+
+查看某个文件改动：
+	git diff filename
+
+查看commit记录：
+	git log
+	如果想让其显示成一行, 可以使用git log --pretty=oneline
+
+HEAD:
+	HEAD是指向当前的版本。所以返回上一个版本可以使用git reset --hard HEAD^ (返回前两个版本就加上两个'^',当然多了的话最好是使用～,如git reset --hard 			HEAD~100)
+
+查看命令记录：
+	如果使用git reset回到某个版本，却忘记了之前的版本号,可以通过git reflog来查看之前的命令记录。
+
+当改动出现错误时可以回退到上一次commit:
+	git reset --hard commitId (commitID 可以不写全，git会自动寻找到)
+
+git的工作区和暂存区：
+	正常工作项目目录就是工作区，.git包含了暂存区以及分支（stage和branch）。
+	git add命令就是将工作区的文件加入stage。
+
+git管理的是修改而不是文件，每次git add的都是将修改提交到暂存区，只有暂存区的东西才可以commit.
+
+在没有push 之前的修改都是可以挽回的：
+	想要恢复工作区或者暂存区的修改可以： git checkout -- <file>    (注意这里的--如果不写的话就会变成切换分支)。git checkout -- 是个一键还原类的命令。
+		一个文件进行过删除或修改都可以恢复，用版本库的文件替换当前工作区。
+	如果已经add到暂存区，可以： git reset HEAD <file> 从当前版本暂存区恢复到工作区，如果需要去除修改就用上面那条命令。
+	如果已经commit了，那么可以使用git reset --hard <commitID>/HEAD^ 恢复到上一次提交。
+
+删除文件：
+	git rm <file>
+	如果删除后发现删错了，可以git reset HEAD <file>来恢复到工作区，再用git checkout -- <file>恢复到版本库中的版本。
+
+git创建远程仓库有两种方式：
+	其中一种是本地建库push 到远端，首先git init, 生成.git文件，然后git remote add origin <.git库名>，git push -u origin master
+	另一种是远端建库，本地clone。
+
+git分支：
+	创建分支：git branch <name> 切换分支： git checkout <name>  -->可以合并成git checkout -b <name>
+	合并分支：git merge <name>将分支合并到当前分支。
+	分支其实可以看做是一条提交历史的时间轴，HEAD指向当前分支的最新节点,每个分支都有一个指针指向该分支的最新节点。
+	分支合并的其中一种方式就是切换指针指向。
+	删除分支：git branch -d <name>
+
+git 合并：
+	git merge <branch>, 通常默认的情况下，一般采用Fast Forward模式进行合并。Fast Forward模式其实就是HEAD指针变动，所以很快。不会留下合并历史记录。
+	但是如果使用普通模式执行就会留下合并历史。git merge --no-ff -m 'title' <branch> 因为普通模式会创建一次commit所以需要-m 'title'
+
+git bug修复：
+	一般修复bug都是创建分支，在分支上修bug,然后合并分支到开发分支上，最后删除该分支。
+	如果当前正在进行某个任务，可以通过git stash来暂时存储当前改动。修改完bug回到当前分支，git stash list查看stash记录。
+	取出stash 代码可以有两种方式：
+		git stash apply 这种方式并不会删除stash list里的数据。需要git stash drop来删除记录。
+		另一种方式是git stash pop取出数据时会删除list记录。
+git 删除未合并分支：
+	git branch -D <branch>强制删除分支内容。
+
+多人协作工作模式：
+	多人同在一个分支下，就容易产生冲突，一旦产生冲突，一般都是远端库比本地更新，需要git pull.
+	如果本地没与远端关联，需要git branch --set-upstream branch-name origin/branch-name
+	在本地解决冲突后在进行提交即可。
+	查看远程库： git remote -v
+
+tag标签：
+	git checkout <branch name>
+	git tag <name> 默认tag标签会打在HEAD上。 如果想指定tag标签打在某个节点上，可以git tag <tagname> <commitID>
+	查看某次tag ： git show <tag name>
+	查看tag记录：git tag
+	创建带有说明的标签：	git tag -a <tagname> -m 'content' <commitID>
+	创建带签名的标签：	git tag -s <tagname> -m 'blabla..' <commitID> 采用PGP签名。
+	删除本地标签：	git tag -d <tagname>
+	推送本地表签到远程：	git push origin <tagname>
+	推送所有未推送的本地标签: git push origin --tags
+	删除远端标签：
+		先删除本地标签： git tag -d <tagname> 然后git push origin :refs/tags/<tagname>
+git如果需要忽略某些文件不提交,可以创建.gitignore文件,将不需要提交的文件名加入到这个文件里,那么在git add的时候就会忽略这些文件了
+	,如果需要添加其中的文件,又不想修改这个文件.可以强制提交 git add -f <filename>
+
+git 命令别名:
+	git config --global alias.别名 '原来的命令'
+	如: git config --global alias.ci 'commit', 这样执行commit的时候就可以git ci -m 'first commit'
+
+git 搭建私有库:
+	//TODO
+

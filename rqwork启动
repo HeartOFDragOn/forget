@@ -1,0 +1,18 @@
+
+本地启动
+copy static resource
+~: python manage.py collectstatic
+
+
+------Start Rqwork-----
+nohup python manage.py rporqworker low --handleexc &
+nohup python manage.py rporqworker low --handleexc &
+nohup python manage.py rporqworker cal &
+nohup python manage.py rporqworker default &
+nohup python manage.py rporqworker default &
+
+关闭
+------Close Rqwork-----
+killall -9 python
+kill -9 XXX
+

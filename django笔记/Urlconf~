@@ -1,0 +1,71 @@
+参考：http://www.ithao123.cn/content-10689522.html
+
+在视图层, 任何请求都需要经过urlconf匹配.
+urls.py文件中添加url映射.
+(每个urls.py中最多添加255个映射)
+
+urlpatterns = [
+	'',
+	url(r'^/$', view, {}, name="")
+]
+
+urlconf中有三个重要方法：patterns(), url()和include();
+最重要的肯定是url();
+
+＃－－－－－－－URL－－－－－－－－
+
+url(regex, view, kwargs=None, name=None, prefix);
+regex是正则表达式，django 依据正则匹配url获取映射view：
+过程是这样的：
+	pattern = re.compile(regex, re.UNICODE)
+	match = pattern.search(url)
+	kwargs = match.groupdict()
+	args = match.groups()
+这里的kwargs不是url方法中的，而是传入view中的参数，
+django中正则匹配url时会若匹配到的kwargs不为空，　则args直接为空，反之，则传入args.
+比如：
+	url(r'^resume/(\d{4})/$', 'new.view.year_resume')
+	url(r'^resume/(?P<year>\d{4})/(?P<month>\d{2})/$', 'new.view.resume')
+这第一个url匹配＇resume/2014/＇
+	获取到kwargs = {}  (这个参数是个字典，通过url传入参数时才会有)
+	args = ('2014',)
+第二个url匹配'resume/2014/11/'
+	获取到kwargs = {'year': '2014', 'month': '11'}
+	args = ('2014', '11',) -->传入view中的是()
+
+＃－－－－－－－－pattern －－－－－－－－
+
+pattern方法：
+	patterns(prefix, *args)
+经常会看到urlpatterns = patterns('',
+		url(r'^/$', view.HomePage, name="home")
+				)
+这种类型的urlconf
+第一个＇＇其实是prefix，这是个必填参数，是view 的前缀，当view的前缀一样时可以使用．
+	如urlpatterns = patterns('view.home'
+		url(r'^/$', 'HomePage', name="home")
+				)
+	代表该url映射的是'view.home.HomePage'
+(注意，这里的urlpatterns不是随便取的名字，urlconf在寻找映射的时候就是通过这个变量名)
+
+＃－－－－－－－－include－－－－－－－－－
+include比较简单，但是include 的namespace不能重名,与name属性一样,可以不写，但是不能重复．
+url(r'^polls/', include('polls.urls', namespace='polls'))
+
+＃－－－－－－－－url反查－－－－－－－－－
+
+url反查：
+url反查有两种方式：直接使用后端代码reverse　＞＞
+reverse 通过url的name属性进行反查，此时url中必须有name属性．
+	urlpatterns = patterns('',
+		url('^/$', view.IndexView.as_view(), name="index"),			
+				)
+
+于是可以通过reverse('index')反查，当然可以带上namespace：
+	reverse('polls:index') 说明路径是/polls/index
+在模板中可以通过url标签获取：
+	{% url 'polls:index' %}
+
+＃－－－－－－－－解释一下as_view－－－－－－－
+//TODO
+

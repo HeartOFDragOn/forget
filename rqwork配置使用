@@ -1,0 +1,50 @@
+首先,下载django-rq
+pip install django-rq(pip是python的包管理器)
+
+然后在setting.py文件中加入:
+INSTALLED_APPS = {
+	"django_rq",
+}
+
+配置队列:
+RQ_QUEUES = {
+	'default': {
+		'HOST': 'localhost',
+		'PORT': 6379,
+		'DEFAULT_TIMEOUT': 360,	
+	},
+
+	'high': {
+		'HOST': 'localhost',
+		'PORT': 6379,
+		'DEFAULT_TIMEOUT': 360,	
+	},
+
+	'low': {
+		'HOST': 'localhost',
+		'PORT': 6379,
+		'DEFAULT_TIMEOUT': 360,	
+	}
+}
+
+这里的'default', 'high', 'low'不是固定写法, 可以任意定义. 主要标示队列属性.
+
+在urlpatterns中加入这个映射:
+urlpatterns += patterns('',
+    url(r'^django-rq/', include('django_rq.urls')),
+)
+
+加入队列:
+可以使用@job装饰器
+@job('high', timeout=1800)
+def foo():
+	xxx
+
+调用的时候使用delay方法.
+foo.delay()
+
+随后启动rqworker.(命令见rqwork启动)
+
+其它使用方式用法:
+//TODO
+

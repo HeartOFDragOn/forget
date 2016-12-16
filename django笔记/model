@@ -1,0 +1,5 @@
+Django中model对应数据库中的表．只不过主键id可以自动生成，而且一般不需要写sql.创建好model后直接python manage.py syncdb生成对应表．
+比如：
+	class Person(models.Model):
+		name = models.CharField(max_length=100)
+		age = models.IntegerField()

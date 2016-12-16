@@ -1,0 +1,67 @@
+首先, 下载nginx:
+sudo apt-get install nginx
+
+然后测试:
+service nginx restart
+在浏览器中打开localhost应该会显示nginx首页
+
+nginx的配置文件是nginx.conf
+在其中可以找到 include /etc/nginx/sites-enabled/*;
+//TODO nginx.conf的高级配置
+
+随后配置/etc/nginx/sites-enable/default
+nginx主要实现反向代理和负载均衡.
+一般大型网站都有许多下属站点,这里就需要nginx虚拟主机将不同服务器配置隔离:
+(就是配置多个server)
+server {
+	listen 80;
+        server_name localhost;
+        access_log /usr/share/nginx/logs/t.ajinga.com-access.log;
+        error_log /usr/share/nginx/logs/t.ajinga.com-error.log;
+        location ~ ^/(static|media)/ {
+                access_log off;
+                root /home/user/Documents/workspace/web/src/rpo/site_media;
+                expires 30d;
+        }
+        location / {
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header REMOTE_HOST $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-FORWARDED-PROTOCOL $scheme;
+                proxy_pass http://127.0.0.1:8000/;
+        }
+	location /v1 {
+            proxy_pass http://127.0.0.1:8000/m;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header REMOTE_HOST $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-FORWARDED-PROTOCOL $scheme;
+        }
+        # redirect server error pages to the static page /50x.html
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+                root /usr/share/nginx/html;
+        }
+	
+}
+
+基础配置只需要server_name, listen以及简单的location即可.
+server_name是url请求对应的主机名,可以在/etc/hosts中做配置映射.
+
+实现负载均衡和反向代理需要详细配置location.
+location中的proxy_pass就实现了反向代理.
+负载均衡可以配置upstream backend, 这里实现4台机器的反向代理负载均衡.
+
+upstream backend {
+    ip_hash;    
+    server backend1.example.com;
+    server backend2.example.com;
+    server backend3.example.com;
+    server backend4.example.com;
+}
+location / {
+	proxy_pass http://backend;
+}
+nginx配置文件支持正则匹配以及简单逻辑判断.(~开头的是正则表达式, 允许使用if, break之类)

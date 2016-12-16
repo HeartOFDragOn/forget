@@ -1,0 +1,102 @@
+javascript中一切皆对象，但是它却并不是面向对象的语言，　因为没有class
+
+面向对象之封装
+　　把属性和方法封装成对象：
+	１．原始模式
+		var bird = {
+			name: 'cook'		
+		}
+		或者
+		var student = {}
+		student.name = 'vic'
+		这样写比较繁琐，如果写多个对象，就要写很多遍．而且对象和原型关系不显而易见．
+	２．原始模式的改进
+		采用函数的形式来创建原型
+		function Cat(name) {
+			return {
+				name:name			
+			}		
+		}
+		var cat1 = Cat('one')
+		var cat2 = Cat('two')	
+		解决了重复写相同代码的问题．但是看不出实例同源．
+	３．构造函数式
+		javascript提供了构造函数（Constructor）
+		function Cat(name) {
+			this.name = name;		
+		}
+		对于构造函数实例化需要new
+		var cat1 = new Cat("one");
+		var cat2 = new Cat("two");
+		看起来和前面的函数没什么大的区别，只是添加了this　
+		但是构造函数new 出来的实例有constructor属性　cat1.constructor = Cat,这就是实例和原型的联系．
+		但是这样仍然有弊端，如果在原型函数中写入很多不变的属性方法，那么每个实例都会拷贝一份，很占用内存．
+	４．prototype原型
+		解决不变属性方法占用内存问题可以通过prototype属性解决．所有函数都有prototype属性．所有对象和函数都有__proto__属性．
+		把不变的属性或者方法定义在prototype中
+			function Cat(name) {
+				this.name = name;			
+			}
+			Cat.prototype.age = "2";
+			Cat.prototype.eat = function() {
+				alert('eat');			
+			}
+		那么接下来这个原型的实例中不变的属性都是指向同一个内存地址．
+	
+	　　prototype:
+		原型的理解：
+			prototype是object类型，是对象，所以可以向其中添加属性或者方法，每个function都有这个属性，当实例化这个function时，就会将新对象的
+				__proto__属性指向prototype.　所以所有实例对象都公用这个对象，故而不会占用内存．
+			只有function方法有prototype属性，但是实例对象没有．
+面向对象之继承
+	１．构造函数绑定
+		function Person(name) {
+			this.name = name;
+		}
+		function Teacher(name, age) {
+			Person.apply(this, arguments);
+			this.age = age;	
+		}
+		通过函数的apply或者call来绑定．
+	２．prototype
+		function Cat(name) {
+			this.name = name;		
+		}
+		function Animal() {
+			this.age = "2";		
+		}
+		Cat.prototype = new Animal();
+		Cat.prototype.constructor = Cat;
+		var cat = new Cat("mimi");
+		alert(cat.age);
+		任何prototype都有constructor属性，而且默认都指向构造函数．
+		所以需要把constructor重新指向Cat
+		实例也有constructor，而且默认就等于prototype的constructor: cat.constructor = Cat.prototype.constructor
+		不过这样会把Animal的constructor也修改成Cat
+	3．用空对象作为中介
+		var F = function(){};
+		F.prototype = Animal.prototype;
+		Cat.prototype = new F();
+		Cat.prototype.constructor = Cat;
+		这样就不会直接修改到Animal的constructor.而且F是空对象，占用内存很少．
+	４．拷贝继承
+		把Animal的所有属性通过方法拷贝到Cat中．
+		　　function extend2(Child, Parent) {
+		　　　　var p = Parent.prototype;
+		　　　　var c = Child.prototype;
+		　　　　for (var i in p) {
+		　　　　　　c[i] = p[i];
+		　　　　　　}
+		　　　　c.uber = p;
+		　　}
+		c.uber标示指向父类．
+	５．对于非构造函数的继承
+		可以通过浅拷贝和深拷贝和prototype的方式
+		prototype:
+			通过函数将子函数的prototype指向父函数．
+			def object(o) {
+				var F = function(){};
+				F.prototype = o;
+				return new F();
+			}
+			var Cat = object(Animal);

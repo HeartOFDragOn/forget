@@ -1,0 +1,98 @@
+首先声明:  python不擅长线程,如果进行线程方面的开发最好不要用python. 就算要用也需要用c专门写一个模块来优化.
+
+实现多任务,可以通过:
+	多进程
+	多线程
+	多进程和多线程合作
+  来实现, 最后一种情况比较复杂, 比较少用.
+
+多进程的实现:
+	使用python来实现多进程最好是在linux/unix下, 当然Mac是基于BSD(unix的一种), 所以也可以.
+	因为linux/unix提供了fork()方法来实现子进程.
+	fork比较特殊, 它返回两次, 因为操作系统会自动将父进程复制一份为子进程, 在父进程返回一次, 子进程返回一次.
+	父进程返回子进程ID, 子进程返回0
+
+	import os
+	pid = os.fork()
+	这样就创建了子进程, os.getpid()可以获取当前进程的ID, pid为0. os.getppid()可以获得子进程ID.
+
+	当然，　python是跨平台的语言，提供了专门的模块来实现多进程-->　multiprocessing, 在windows中就可以使用这个模块．
+		这个模块提供了Process类代表进程．
+	通过实例化Process 获取进程．　需要传入函数以及参数．
+		如： 	from multiprocessing import Process
+		    	import os
+			
+			def show_name(name):
+				print 'Run child process %s (%s)' % (name, os.getpid())
+			
+			if __name__ == "__main__":
+				p = Process(show_name, ('haha',))
+				print 'process start...'					
+				p.start()
+				p.join()
+				print 'process end...'
+	p就是进程实例，p.start()启动子进程，　p.join()等待子进程结束继续执行，相当于进程间同步．
+
+　　进程池	
+	多进程需要使用进程池，　from multiprocessing import Pool.
+	p = Pool()可以添加参数，参数默认与配置有关,是cpu的核数，代表并行进程数，可以设置，如pool = Pool(5)
+	创建完进程池实例后，开启线程是通过p.apply_async(函数，　参数)来实现的
+	当然最后需要关闭进程池,
+	p.close()
+	p.join()
+	调用close之后就不能在继续添加Process了．
+
+　　进程间通信
+	multiprocessing模块提供了Queue和Pipes（管道）来进行进程间通信．
+	例如使用Queue来进行通信
+	from multiprocessing import Process, Queue
+	
+	def write(q):
+		q.put('A')
+	
+	def read(q):
+		while True:
+			value = q.get(True)
+			print value	
+
+	q = Queue()
+	write_pro = Process(target=write, (q,))
+	read_pro = Process(target=read, (q,))
+	write_pro.start()
+	read_pro.start()
+	write_pro.join()
+	read_pro.terminate()	
+	发送信息的进程传入队列实例，向队列添加信息．
+	获取信息的进程传入队列实例，读取队列信息．
+
+多线程：
+	多任务还可以由多线程完成，每个进程都有至少一个子线程．python的线程是真正的posix thread,而不是模拟出来的线程．
+	python提供了thread和threading两个模块来实现多线程，thread是低级模块，　threading是对thread进行封装的高级模块,通常使用threading.
+	import threading
+	print threading.current_thread().name
+	通过threading.current_thread()可以获取当前正在执行的线程对象．
+	创建子线程：	p = threading.Thread(target=函数，　name= "ThreadName")
+	(thread模块也可以实现创建子线程，和简单的线程锁，　p = thread.start_new(函数，　参数), p.start())
+	
+	线程的特点就是共享资源，但是这也是弊端，多线程并发就会导致资源不像预期结果．所以就有了线程锁（每次资源只能让一个线程占用），但这是牺牲了效率换取安全．
+		线程锁会导致资源利用率低，然而python线程本身就有一个线程锁（GIL）,这是python历史遗留问题,　所以python的多线程资源利用率低，不擅长多线程．		
+	因为Python的线程虽然是真正的线程，但解释器执行代码时，有一个GIL锁：Global Interpreter Lock，任何Python线程执行前，必须先获得GIL锁，然后，每执行10
+		0条字节码，解释器就自动释放GIL锁，让别的线程有机会执行。这个GIL全局锁实际上把所有线程的执行代码都给上了锁，所以，多线程在Python中只能交替
+		执行，即使100个线程跑在100核CPU上，也只能用到1个核。
+	多线程比多进程创建速度快，因为多进程创建的时候会复制资源和进程上下文，很占用内存．
+　　　　
+　　线程锁
+	lock = threading.Lock()
+	try:
+		lock.aquire()
+		fun()
+	except:
+		pass
+	finally:
+		lock.release()
+	使用线程锁的代码实际上就是单线程模式，而且有可能存在多种进程锁，线程之间可能想互相去到对方的锁，造成死锁．
+
+	多线程的局部变量想要在线程之间传递，可以通过ThreadLocal. 这是个dict, key就是线程对象．
+	ThreadLocal对象是通过local_school = threading.local()获取到．
+	由于threadlocal是个类似dict的东西，所以可以添加其它属性, 如local_school.student = name
+
